@@ -30,6 +30,7 @@ use axum::{
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::process;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tower_http::limit::RequestBodyLimitLayer;
@@ -194,6 +195,8 @@ pub struct AppState {
     pub whatsapp_app_secret: Option<Arc<str>>,
     /// WebSocket state for real-time dashboard updates
     pub ws_state: Arc<crate::gateway::websocket::WsState>,
+    /// Server start time for uptime calculation
+    pub start_time: Instant,
 }
 
 /// Run the HTTP gateway using axum with proper HTTP/1.1 compliance.
@@ -377,6 +380,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
         whatsapp: whatsapp_channel,
         whatsapp_app_secret,
         ws_state,
+        start_time: Instant::now(),
     };
 
     // Build router with middleware
@@ -946,9 +950,12 @@ async fn api_channel_status(
 
 /// GET /api/daemon/status — Get daemon status
 async fn api_daemon_status(State(state): State<AppState>) -> impl IntoResponse {
+    let uptime = state.start_time.elapsed().as_secs();
     Json(serde_json::json!({
         "status": "running",
         "paired": state.pairing.is_paired(),
+        "pid": process::id(),
+        "uptime_seconds": uptime,
         "runtime": crate::health::snapshot_json()
     }))
 }
@@ -977,7 +984,7 @@ async fn api_system_info() -> impl IntoResponse {
         "version": env!("CARGO_PKG_VERSION"),
         "platform": std::env::consts::OS,
         "arch": std::env::consts::ARCH,
-        "rust_version": "1.93" // Hardcoded for now
+        "rust_version": "1.92.0" // From rust-toolchain.toml
     }))
 }
 
@@ -992,7 +999,6 @@ async fn api_system_metrics() -> impl IntoResponse {
 
 /// Helper function to merge config patches
 fn merge_config(config: &mut Config, patch: &serde_json::Value) -> Result<()> {
-    // Simple merge - in production, you'd want more sophisticated logic
     if let Some(obj) = patch.as_object() {
         for (key, value) in obj {
             match key.as_str() {
@@ -1011,8 +1017,54 @@ fn merge_config(config: &mut Config, patch: &serde_json::Value) -> Result<()> {
                         config.default_temperature = n;
                     }
                 }
+                "api_key" => {
+                    if let Some(s) = value.as_str() {
+                        config.api_key = Some(s.to_string());
+                    }
+                }
+                "api_url" => {
+                    if let Some(s) = value.as_str() {
+                        config.api_url = Some(s.to_string());
+                    }
+                }
+                "providers" => {
+                    // Handle provider configuration from WebUI
+                    // The WebUI sends: { providers: { "zai": { api_key: "...", base_url: "...", model: "..." } } }
+                    // We map this to the global config fields
+                    if let Some(providers_obj) = value.as_object() {
+                        for (provider_name, provider_config) in providers_obj {
+                            if let Some(config_obj) = provider_config.as_object() {
+                                // Extract api_key - store in global api_key
+                                if let Some(api_key) = config_obj.get("api_key").and_then(|v| v.as_str()) {
+                                    if !api_key.is_empty() {
+                                        config.api_key = Some(api_key.to_string());
+                                    }
+                                }
+
+                                // Extract base_url - store in global api_url
+                                if let Some(base_url) = config_obj.get("base_url").and_then(|v| v.as_str()) {
+                                    if !base_url.is_empty() {
+                                        config.api_url = Some(base_url.to_string());
+                                    }
+                                }
+
+                                // Extract model - if this is the default provider, update default_model
+                                if let Some(model) = config_obj.get("model").and_then(|v| v.as_str()) {
+                                    let is_default = config.default_provider.as_deref()
+                                        .map(|dp| dp == provider_name)
+                                        .unwrap_or(false);
+
+                                    if is_default && !model.is_empty() {
+                                        config.default_model = Some(model.to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 _ => {
-                    // Ignore unknown keys
+                    // Ignore unknown keys for now
+                    tracing::debug!("Ignoring unknown config key: {}", key);
                 }
             }
         }

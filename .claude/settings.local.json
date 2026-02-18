@@ -13,7 +13,13 @@
       "Bash(git -C /d/repos/zeroclaw ls-tree HEAD src/config/)",
       "Bash(docker build:*)",
       "Bash(cargo build:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker builder prune:*)",
+      "Bash(DOCKER_BUILDKIT=0 docker build:*)",
+      "Bash(npm run build:*)",
+      "Bash(Select-String:*)",
+      "Bash(Select-Object:*)"
     ]
   }
 }

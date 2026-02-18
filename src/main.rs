@@ -164,6 +164,10 @@ enum Commands {
         /// WebUI port (only used with --webui); defaults to 8080
         #[arg(long)]
         webui_port: Option<u16>,
+
+        /// WebUI static files path (only used with --webui); defaults to /usr/local/share/zeroclaw/webui
+        #[arg(long)]
+        webui_path: Option<String>,
     },
 
     /// Start long-running autonomous runtime (gateway + channels + heartbeat + scheduler)
@@ -458,6 +462,7 @@ async fn main() -> Result<()> {
             host,
             webui,
             webui_port,
+            webui_path,
         } => {
             let port = port.unwrap_or(config.gateway.port);
             let host = host.unwrap_or_else(|| config.gateway.host.clone());
@@ -471,12 +476,14 @@ async fn main() -> Result<()> {
             let webui_enabled = webui || config.webui.enabled;
             let webui_port = webui_port.unwrap_or(config.webui.port);
             let webui_host = &config.webui.host;
+            let webui_static_path = webui_path.as_deref();
 
             // Start WebUI if enabled
             let webui_handle = if webui_enabled {
                 let webui_host = webui_host.clone();
+                let webui_static_path = webui_static_path.map(|s| s.to_string());
                 Some(tokio::spawn(async move {
-                    if let Err(e) = webui::run_webui(&webui_host, webui_port, None).await {
+                    if let Err(e) = webui::run_webui(&webui_host, webui_port, webui_static_path.as_deref()).await {
                         tracing::error!("WebUI server failed: {e}");
                     }
                 }))
