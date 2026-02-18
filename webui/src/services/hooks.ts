@@ -26,6 +26,7 @@ const API_BASE = '/api';
 
 const api = {
   request: async (url: string, options: RequestInit = {}) => {
+    console.log(`[API] ${options.method || 'GET'} ${url}`);
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -33,8 +34,24 @@ const api = {
         ...options.headers,
       },
     });
+    console.log(`[API] Response status: ${response.status}`);
+
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      // Try to get error message from response body
+      let errorMessage = `API error: ${response.status}`;
+      try {
+        const errorBody = await response.json();
+        if (errorBody.error) {
+          errorMessage = errorBody.error;
+        } else if (errorBody.message) {
+          errorMessage = errorBody.message;
+        }
+      } catch (e) {
+        // If parsing fails, use status text
+        errorMessage = `API error: ${response.status} ${response.statusText}`;
+      }
+      console.error(`[API] Error:`, errorMessage);
+      throw new Error(errorMessage);
     }
     return response.json();
   },

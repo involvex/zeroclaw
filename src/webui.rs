@@ -9,7 +9,7 @@ use axum::{
     extract::{Request, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{any, get},
     Router,
 };
 use std::fs;
@@ -58,7 +58,7 @@ pub async fn run_webui(host: &str, port: u16, static_path: Option<&str>) -> Resu
         .route("/logs", get(handle_logs))
         .route("/settings", get(handle_settings))
         .route("/assets/{*path}", get(handle_assets))
-        .route("/api/{*path}", get(handle_api))
+        .route("/api/{*path}", any(handle_api))  // Handle ALL methods for API
         .fallback(handle_catchall)
         .with_state(state);
 

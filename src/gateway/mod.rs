@@ -795,31 +795,42 @@ async fn api_update_config(
     State(state): State<AppState>,
     Json(patch): Json<serde_json::Value>,
 ) -> impl IntoResponse {
+    tracing::info!("PUT /api/config - Received patch: {}", serde_json::to_string(&patch).unwrap_or_else(|_| "unknown".to_string()));
+
     let mut config = state.config.lock();
 
     // Apply partial update (this is a simplified version)
     // In production, you'd want more sophisticated merging logic
     if let Err(e) = merge_config(&mut config, &patch) {
+        tracing::error!("Failed to merge config: {}", e);
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": e.to_string()})),
         ).into_response();
     }
 
+    tracing::info!("Config merged successfully");
     Json(serde_json::json!({"status": "updated"})).into_response()
 }
 
 /// POST /api/config/save — Save config to disk
 async fn api_save_config(State(state): State<AppState>) -> impl IntoResponse {
+    tracing::info!("POST /api/config/save - Saving config to disk");
     let config = state.config.lock();
     let result = config.save();
 
     match result {
-        Ok(_) => Json(serde_json::json!({"status": "saved"})).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": e.to_string()})),
-        ).into_response(),
+        Ok(_) => {
+            tracing::info!("Config saved successfully");
+            Json(serde_json::json!({"status": "saved"})).into_response()
+        },
+        Err(e) => {
+            tracing::error!("Failed to save config: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": e.to_string()})),
+            ).into_response()
+        }
     }
 }
 
