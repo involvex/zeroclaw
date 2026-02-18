@@ -67,6 +67,7 @@ mod skills;
 mod tools;
 mod tunnel;
 mod util;
+mod webui;
 
 use config::Config;
 
@@ -155,6 +156,14 @@ enum Commands {
         /// Host to bind to; defaults to config gateway.host
         #[arg(long)]
         host: Option<String>,
+
+        /// Enable the WebUI dashboard
+        #[arg(long)]
+        webui: bool,
+
+        /// WebUI port (only used with --webui); defaults to 8080
+        #[arg(long)]
+        webui_port: Option<u16>,
     },
 
     /// Start long-running autonomous runtime (gateway + channels + heartbeat + scheduler)
@@ -444,7 +453,12 @@ async fn main() -> Result<()> {
             .await
             .map(|_| ()),
 
-        Commands::Gateway { port, host } => {
+        Commands::Gateway {
+            port,
+            host,
+            webui,
+            webui_port,
+        } => {
             let port = port.unwrap_or(config.gateway.port);
             let host = host.unwrap_or_else(|| config.gateway.host.clone());
             if port == 0 {
@@ -452,7 +466,33 @@ async fn main() -> Result<()> {
             } else {
                 info!("🚀 Starting ZeroClaw Gateway on {host}:{port}");
             }
-            gateway::run_gateway(&host, port, config).await
+
+            // Override WebUI settings from command line
+            let webui_enabled = webui || config.webui.enabled;
+            let webui_port = webui_port.unwrap_or(config.webui.port);
+            let webui_host = &config.webui.host;
+
+            // Start WebUI if enabled
+            let webui_handle = if webui_enabled {
+                let webui_host = webui_host.clone();
+                Some(tokio::spawn(async move {
+                    if let Err(e) = webui::run_webui(&webui_host, webui_port, None).await {
+                        tracing::error!("WebUI server failed: {e}");
+                    }
+                }))
+            } else {
+                None
+            };
+
+            // Run the gateway
+            let result = gateway::run_gateway(&host, port, config).await;
+
+            // Abort WebUI if it was started
+            if let Some(handle) = webui_handle {
+                handle.abort();
+            }
+
+            result
         }
 
         Commands::Daemon { port, host } => {

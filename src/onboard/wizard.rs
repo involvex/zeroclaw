@@ -127,6 +127,7 @@ pub fn run_wizard() -> Result<Config> {
         memory: memory_config, // User-selected memory backend
         tunnel: tunnel_config,
         gateway: crate::config::GatewayConfig::default(),
+        webui: crate::config::schema::WebUIConfig::default(),
         composio: composio_config,
         secrets: secrets_config,
         browser: BrowserConfig::default(),
@@ -345,6 +346,7 @@ pub fn run_quick_setup(
         memory: memory_config,
         tunnel: crate::config::TunnelConfig::default(),
         gateway: crate::config::GatewayConfig::default(),
+        webui: crate::config::schema::WebUIConfig::default(),
         composio: ComposioConfig::default(),
         secrets: SecretsConfig::default(),
         browser: BrowserConfig::default(),

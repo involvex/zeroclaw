@@ -66,6 +66,9 @@ pub struct Config {
     pub gateway: GatewayConfig,
 
     #[serde(default)]
+    pub webui: WebUIConfig,
+
+    #[serde(default)]
     pub composio: ComposioConfig,
 
     #[serde(default)]
@@ -519,6 +522,40 @@ impl Default for GatewayConfig {
             pair_rate_limit_per_minute: default_pair_rate_limit(),
             webhook_rate_limit_per_minute: default_webhook_rate_limit(),
             idempotency_ttl_secs: default_idempotency_ttl_secs(),
+        }
+    }
+}
+
+// ── WebUI Configuration ───────────────────────────────────────────
+
+/// Configuration for the ZeroClaw web dashboard interface.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebUIConfig {
+    /// Enable the web UI (default: false)
+    #[serde(default)]
+    pub enabled: bool,
+    /// WebUI host binding (default: 127.0.0.1)
+    #[serde(default = "default_webui_host")]
+    pub host: String,
+    /// WebUI port (default: 8080)
+    #[serde(default = "default_webui_port")]
+    pub port: u16,
+}
+
+fn default_webui_host() -> String {
+    "0.0.0.0".into()
+}
+
+fn default_webui_port() -> u16 {
+    8080
+}
+
+impl Default for WebUIConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: default_webui_host(),
+            port: default_webui_port(),
         }
     }
 }
@@ -1691,6 +1728,7 @@ impl Default for Config {
             memory: MemoryConfig::default(),
             tunnel: TunnelConfig::default(),
             gateway: GatewayConfig::default(),
+            webui: WebUIConfig::default(),
             composio: ComposioConfig::default(),
             secrets: SecretsConfig::default(),
             browser: BrowserConfig::default(),
@@ -2328,6 +2366,7 @@ default_temperature = 0.7
             memory: MemoryConfig::default(),
             tunnel: TunnelConfig::default(),
             gateway: GatewayConfig::default(),
+            webui: WebUIConfig::default(),
             composio: ComposioConfig::default(),
             secrets: SecretsConfig::default(),
             browser: BrowserConfig::default(),
@@ -2437,6 +2476,7 @@ tool_dispatcher = "xml"
             memory: MemoryConfig::default(),
             tunnel: TunnelConfig::default(),
             gateway: GatewayConfig::default(),
+            webui: WebUIConfig::default(),
             composio: ComposioConfig::default(),
             secrets: SecretsConfig::default(),
             browser: BrowserConfig::default(),

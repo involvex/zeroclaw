@@ -29,3 +29,8 @@ venv/
 *.key
 *.pem
 credentials.json
+
+# WebUI frontend artifacts
+webui/node_modules/
+webui/dist/
+webui/.vite/

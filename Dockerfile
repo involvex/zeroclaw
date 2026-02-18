@@ -33,6 +33,15 @@ RUN --mount=type=cache,id=zeroclaw-cargo-registry,target=/usr/local/cargo/regist
     cp target/release/zeroclaw /app/zeroclaw && \
     strip /app/zeroclaw
 
+# ── Stage 2a: Build WebUI ──────────────────────────────────────
+FROM node:20-alpine AS webui-builder
+
+WORKDIR /webui
+COPY webui/package.json ./
+RUN npm install
+COPY webui/ ./
+RUN npm run build
+
 # ── Stage 2: Permissions & Config Prep ───────────────────────
 FROM busybox:1.37@sha256:b3255e7dfbcd10cb367af0d409747d511aeb66dfac98cf30e97e87e4207dd76f AS permissions
 # Create directory structure (simplified workspace path)
@@ -72,6 +81,7 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=permissions /zeroclaw-data /zeroclaw-data
 COPY --from=builder /app/zeroclaw /usr/local/bin/zeroclaw
+COPY --from=webui-builder /webui/dist /usr/local/share/zeroclaw/webui
 
 # Overwrite minimal config with DEV template (Ollama defaults)
 COPY dev/config.template.toml /zeroclaw-data/.zeroclaw/config.toml
@@ -91,7 +101,7 @@ ENV ZEROCLAW_GATEWAY_PORT=3000
 
 WORKDIR /zeroclaw-data
 USER 65534:65534
-EXPOSE 3000
+EXPOSE 3000 8080
 ENTRYPOINT ["zeroclaw"]
 CMD ["gateway"]
 
@@ -100,6 +110,7 @@ FROM gcr.io/distroless/cc-debian13:nonroot@sha256:84fcd3c223b144b0cb6edc5ecc7564
 
 COPY --from=builder /app/zeroclaw /usr/local/bin/zeroclaw
 COPY --from=permissions /zeroclaw-data /zeroclaw-data
+COPY --from=webui-builder /webui/dist /usr/local/share/zeroclaw/webui
 
 # Environment setup
 ENV ZEROCLAW_WORKSPACE=/zeroclaw-data/workspace
@@ -109,10 +120,14 @@ ENV HOME=/zeroclaw-data
 ENV PROVIDER="openrouter"
 ENV ZEROCLAW_GATEWAY_PORT=3000
 
+# WebUI environment
+ENV ZEROCLAW_WEBUI_ENABLED=true
+ENV ZEROCLAW_WEBUI_PORT=8080
+
 # API_KEY must be provided at runtime!
 
 WORKDIR /zeroclaw-data
 USER 65534:65534
-EXPOSE 3000
+EXPOSE 3000 8080
 ENTRYPOINT ["zeroclaw"]
 CMD ["gateway"]

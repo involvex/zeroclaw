@@ -14,7 +14,8 @@ services:
     build: .
     container_name: zeroclaw
     restart: unless-stopped
-    
+    command: ["gateway", "--webui"]
+
     environment:
       # Required: Your LLM provider API key
       - API_KEY=${API_KEY:-}
@@ -27,6 +28,11 @@ services:
       
       # Allow public bind inside Docker (required for container networking)
       - ZEROCLAW_ALLOW_PUBLIC_BIND=true
+
+      # WebUI configuration
+      - ZEROCLAW_WEBUI_ENABLED=true
+      - ZEROCLAW_WEBUI_PORT=8080
+      - ZEROCLAW_WEBUI_HOST=0.0.0.0
       
       # Optional: Model override
       # - ZEROCLAW_MODEL=anthropic/claude-sonnet-4-20250514
@@ -38,6 +44,8 @@ services:
     ports:
       # Gateway API port (override HOST_PORT if 3000 is taken)
       - "${HOST_PORT:-3000}:3000"
+      # WebUI port
+      - "8080:8080"
     
     # Resource limits
     deploy:

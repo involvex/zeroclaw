@@ -10,7 +10,10 @@
       "Bash(git -C /d/repos/zeroclaw status --porcelain)",
       "Bash(git -C /d/repos/zeroclaw show HEAD:src/config/schema.rs)",
       "Bash(git -C /d/repos/zeroclaw log:*)",
-      "Bash(git -C /d/repos/zeroclaw ls-tree HEAD src/config/)"
+      "Bash(git -C /d/repos/zeroclaw ls-tree HEAD src/config/)",
+      "Bash(docker build:*)",
+      "Bash(cargo build:*)",
+      "Bash(docker exec:*)"
     ]
   }
 }
