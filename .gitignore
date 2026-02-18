@@ -1,3 +1,5 @@
+.mira
+
 /target
 firmware/*/target
 *.db

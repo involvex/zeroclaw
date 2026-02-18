@@ -52,6 +52,7 @@ default_temperature = 0.7
 port = 3000
 host = "[::]"
 allow_public_bind = true
+require_pairing = false
 EOF
 
 RUN chown -R 65534:65534 /zeroclaw-data

@@ -9,9 +9,9 @@
 
 services:
   zeroclaw:
-    image: ghcr.io/zeroclaw-labs/zeroclaw:latest
+    # image: ghcr.io/zeroclaw-labs/zeroclaw:latest
     # Or build locally:
-    # build: .
+    build: .
     container_name: zeroclaw
     restart: unless-stopped
     
@@ -23,7 +23,7 @@ services:
       
       # Optional: LLM provider (default: openrouter)
       # Options: openrouter, openai, anthropic, ollama
-      - PROVIDER=${PROVIDER:-openrouter}
+      - PROVIDER=${PROVIDER:-zai}
       
       # Allow public bind inside Docker (required for container networking)
       - ZEROCLAW_ALLOW_PUBLIC_BIND=true
@@ -51,7 +51,7 @@ services:
 
     # Health check
     healthcheck:
-      test: ["CMD", "zeroclaw", "doctor"]
+      test: ["CMD", "/usr/local/bin/zeroclaw", "doctor"]
       interval: 30s
       timeout: 10s
       retries: 3

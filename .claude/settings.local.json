@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git show:*)",
+      "Bash(docker compose:*)",
+      "Bash(cargo check:*)",
+      "Bash(git -C /d/repos/zeroclaw diff --stat)",
+      "Bash(git -C /d/repos/zeroclaw diff --no-color)",
+      "Bash(git -C /d/repos/zeroclaw diff:*)",
+      "Bash(git -C /d/repos/zeroclaw status --porcelain)",
+      "Bash(git -C /d/repos/zeroclaw show HEAD:src/config/schema.rs)",
+      "Bash(git -C /d/repos/zeroclaw log:*)",
+      "Bash(git -C /d/repos/zeroclaw ls-tree HEAD src/config/)"
+    ]
+  }
+}
