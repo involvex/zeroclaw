@@ -135,7 +135,9 @@ async fn handle_assets(State(state): State<WebUIState>, req: Request) -> impl In
 }
 
 async fn handle_api(State(state): State<WebUIState>, req: Request) -> impl IntoResponse {
-    eprintln!("🔥 handle_api called!");
+    eprintln!("🔥 handle_api called! URI: {}", req.uri());
+    eprintln!("🔥 handle_api path: {}", req.uri().path());
+    eprintln!("🔥 handle_api path_and_query: {:?}", req.uri().path_and_query());
     proxy_api_request(req, &state.static_path).await
 }
 
@@ -173,8 +175,8 @@ async fn proxy_api_request(req: Request, _static_path: &PathBuf) -> impl IntoRes
         .unwrap_or("/");
 
     // Build the gateway URL (localhost:3000)
-    // Note: The /api prefix is stripped by the route, so we need to add it back
-    let gateway_url = format!("http://127.0.0.1:3000/api{}", path_and_query);
+    // The /api/{*path} route captures the full path including /api
+    let gateway_url = format!("http://127.0.0.1:3000{}", path_and_query);
 
     tracing::info!("Proxying API request: {} {} -> {}", method, path_and_query, gateway_url);
 

@@ -786,7 +786,53 @@ async fn handle_whatsapp_message(
 /// GET /api/config — Get full config (sanitized, no secrets)
 async fn api_get_config(State(state): State<AppState>) -> impl IntoResponse {
     let config = state.config.lock();
-    let sanitized = serde_json::to_value(&*config).unwrap_or_default();
+    let mut sanitized = serde_json::to_value(&*config).unwrap_or_default();
+
+    // Synthesize a providers section for the WebUI
+    // The WebUI expects providers in the format: { "provider_name": { "enabled": bool, ... } }
+    if let Some(obj) = sanitized.as_object_mut() {
+        let providers_list = vec![
+            "anthropic", "openai", "ollama", "openrouter", "zai", "glm", "groq",
+            "cohere", "mistral", "huggingface", "replicate", "together", "forefront",
+            "alephalpha", "palm", "azure", "bedrock", "deepinfra", "bananadev",
+            "nlpcloud", "ai21", "xai", "briandearch", "novita", "voyageai", "jina",
+            "perplexity", "anyscale", "fireworks", "cloudflare", "deepseek", "lmstudio",
+            "litellm"
+        ];
+
+        let default_provider = config.default_provider.as_deref().unwrap_or("");
+        let mut providers_obj = serde_json::Map::new();
+
+        for provider in providers_list {
+            let is_default = default_provider == provider;
+            let mut provider_data = serde_json::Map::new();
+            provider_data.insert("enabled".to_string(), serde_json::json!(is_default));
+
+            // Add api_key if this is the default provider and api_key is set
+            if is_default && config.api_key.is_some() {
+                provider_data.insert("api_key".to_string(), serde_json::json!("***"));
+            }
+
+            // Add base_url if this is the default provider and api_url is set
+            if is_default && config.api_url.is_some() {
+                if let Some(url) = &config.api_url {
+                    provider_data.insert("base_url".to_string(), serde_json::json!(url));
+                }
+            }
+
+            // Add model if this is the default provider
+            if is_default && config.default_model.is_some() {
+                if let Some(model) = &config.default_model {
+                    provider_data.insert("model".to_string(), serde_json::json!(model));
+                }
+            }
+
+            providers_obj.insert(provider.to_string(), serde_json::json!(provider_data));
+        }
+
+        obj.insert("providers".to_string(), serde_json::json!(providers_obj));
+    }
+
     Json(sanitized)
 }
 

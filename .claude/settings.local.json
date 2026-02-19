@@ -19,7 +19,18 @@
       "Bash(DOCKER_BUILDKIT=0 docker build:*)",
       "Bash(npm run build:*)",
       "Bash(Select-String:*)",
-      "Bash(Select-Object:*)"
+      "Bash(Select-Object:*)",
+      "Bash(cargo clean:*)",
+      "Bash(set:*)",
+      "Bash(wsl:*)",
+      "Bash(docker pull:*)",
+      "Bash(rustup:*)",
+      "Bash(rustc:*)",
+      "Bash(cargo:*)",
+      "Bash(docker:*)",
+      "Bash(git diff:*)",
+      "Bash(git --no-pager diff:*)",
+      "Bash(HOST_PORT=3001 docker compose:*)"
     ]
   }
 }
